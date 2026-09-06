@@ -1,0 +1,106 @@
+{
+  "_note": "黃金三角三節點。所有 verified:false 的欄位在 9/8-9/9 查證階段補齊；查證前 Agent 不得將其當作史實陳述。",
+  "_schema_version": 1,
+  "landmarks": [
+    {
+      "id": "fuzhong",
+      "name": "傅鐘",
+      "qr_tokens": ["fuzhong", "t1928-fz"],
+      "era_label": "1960–70 年代",
+      "persona_file": "persona_1970s_student.md",
+      "corpus_tags": ["fuzhong", "1960s", "1970s"],
+      "is_default_entry": true,
+      "entry_note": "多數使用者的入口地標，demo 品質最關鍵。",
+      "arrival_puzzle": {
+        "enabled": false,
+        "passcode": null,
+        "hint": null,
+        "requires_knowledge_from": ["zongtu"],
+        "verified": false,
+        "todo": "密碼需為現場可觀察、且需結合舊總圖知識才能定位的資訊。待實地勘查後設計。"
+      },
+      "facts_status": {
+        "verified": false,
+        "todo": [
+          "傅鐘設立年份與緣由",
+          "『21 響』典故的正確說法與可靠出處（最高頻問題，必須查到出處）"
+        ]
+      }
+    },
+    {
+      "id": "zongtu",
+      "name": "舊總圖（今校史館）",
+      "qr_tokens": ["zongtu", "t1928-zt"],
+      "era_label": "1950 年代",
+      "persona_file": "persona_1950s_literature_student.md",
+      "corpus_tags": ["zongtu", "1950s", "library"],
+      "is_default_entry": false,
+      "entry_note": "路線中間站，需能雙向承接前後兩個年代。",
+      "arrival_puzzle": {
+        "enabled": false,
+        "passcode": null,
+        "hint": null,
+        "requires_knowledge_from": ["wenxueyuan"],
+        "verified": false,
+        "todo": "待實地勘查後設計。"
+      },
+      "facts_status": {
+        "verified": false,
+        "todo": [
+          "舊總圖落成年份與帝大時期原始用途",
+          "1950 年代閱覽室配置與藏書規模"
+        ]
+      }
+    },
+    {
+      "id": "wenxueyuan",
+      "name": "舊文學院",
+      "qr_tokens": ["wenxueyuan", "t1928-wx"],
+      "era_label": "臺北帝大時期（1930 年代）",
+      "persona_file": "persona_1930s_taihoku_student.md",
+      "corpus_tags": ["wenxueyuan", "1930s", "taihoku"],
+      "is_default_entry": false,
+      "entry_note": "尋跡的終點，也是時間上的起點；開場應有分量感。",
+      "language_disclosure": "為便於對話，本角色以中文呈現；帝大時期校園語言以日語為主。",
+      "arrival_puzzle": {
+        "enabled": false,
+        "passcode": null,
+        "hint": null,
+        "requires_knowledge_from": ["zongtu"],
+        "verified": false,
+        "todo": "待實地勘查後設計。"
+      },
+      "facts_status": {
+        "verified": false,
+        "todo": [
+          "舊文學院落成年份、建築樣式與原始用途",
+          "文政學部科系結構",
+          "台籍學生在帝大／文政學部的比例"
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "a": "fuzhong",
+      "b": "zongtu",
+      "walk_minutes": 2,
+      "verified": false,
+      "todo": "實地量測步行時間"
+    },
+    {
+      "a": "zongtu",
+      "b": "wenxueyuan",
+      "walk_minutes": 3,
+      "verified": false,
+      "todo": "實地量測步行時間"
+    },
+    {
+      "a": "fuzhong",
+      "b": "wenxueyuan",
+      "walk_minutes": 4,
+      "verified": false,
+      "todo": "實地量測步行時間"
+    }
+  ]
+}

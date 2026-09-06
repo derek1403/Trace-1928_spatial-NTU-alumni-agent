@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+*.egg-info/
+
+# 執行期產物
+outputs/
+.chroma/
+*.log
+sessions/
+
+# 資料：照片本體不進版控，metadata 與授權表進
+data/archive/*
+!data/archive/.gitkeep
+!data/archive/*.json
+
+.DS_Store
+Thumbs.db

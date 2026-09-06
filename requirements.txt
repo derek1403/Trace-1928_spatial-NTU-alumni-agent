@@ -1,0 +1,17 @@
+# --- 核心（MVP 必需） ---
+anthropic>=1.0.0
+gradio>=4.44.0
+Pillow>=10.0.0
+numpy>=1.24.0
+
+# --- 動態影像輸出（可選；缺少時自動降級為 GIF） ---
+imageio>=2.31.0
+imageio-ffmpeg>=0.4.9
+
+# --- 向量檢索（可選；缺少時自動降級為內建 BM25） ---
+# chromadb>=0.5.0
+# sentence-transformers>=3.0.0
+
+# --- 深度估計（可選；用於 Ken Burns 2.5D 視差） ---
+# torch>=2.0.0
+# timm>=1.0.0

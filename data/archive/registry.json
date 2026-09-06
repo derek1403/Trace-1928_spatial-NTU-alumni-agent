@@ -1,0 +1,15 @@
+{
+  "_note": "照片授權登錄表。未登錄於此的照片，animate_photo 會直接拒絕生成 —— 授權閘門在程式層強制執行，不依賴人的自律。",
+  "_schema": {
+    "id": "照片識別碼，Agent 以此引用",
+    "filename": "檔名，位於 data/archive/ 下（照片本體不進版控）",
+    "landmark": "fuzhong | zongtu | wenxueyuan",
+    "year": "拍攝或發表年份；不確定時填 '' 並在 licence_basis 說明",
+    "source": "來源機構或典藏單位",
+    "licence": "PD | CC0 | CC-BY | CC-BY-SA | UGC | 授權中 | 不可用",
+    "licence_basis": "**必填**。具體寫明判定依據，例如『法人著作，1935 年發表，逾 50 年保護期』或『來源頁面標示 CC BY 4.0，擷取自 <URL>』。不接受『應該是公版』這類概括推定 —— 缺此欄位者視為不可用。",
+    "acquired": "取得日期 YYYY-MM-DD",
+    "caption": "畫面說明，會提供給 Agent 作為敘事素材"
+  },
+  "photos": []
+}
