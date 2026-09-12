@@ -5,42 +5,67 @@
     {
       "id": "fuzhong",
       "name": "傅鐘",
-      "qr_tokens": ["fuzhong", "t1928-fz"],
+      "qr_tokens": [
+        "fuzhong",
+        "t1928-fz"
+      ],
       "era_label": "1960–70 年代",
       "persona_file": "persona_1970s_student.md",
-      "corpus_tags": ["fuzhong", "1960s", "1970s"],
+      "corpus_tags": [
+        "fuzhong",
+        "1960s",
+        "1970s"
+      ],
       "is_default_entry": true,
       "entry_note": "多數使用者的入口地標，demo 品質最關鍵。",
       "arrival_puzzle": {
         "enabled": false,
         "passcode": null,
         "hint": null,
-        "requires_knowledge_from": ["zongtu"],
+        "requires_knowledge_from": [
+          "zongtu"
+        ],
         "verified": false,
         "todo": "密碼需為現場可觀察、且需結合舊總圖知識才能定位的資訊。待實地勘查後設計。"
       },
       "facts_status": {
-        "verified": false,
+        "verified": true,
+        "source": "國立臺灣大學訪客中心「5.傅鐘」（2026-09-12 查證）",
+        "confirmed": [
+          "1950 年傅斯年校長過世後，軍方鑄鐘贈予臺大，起初稱『紀念鐘』",
+          "敲響次數演變：人工 55 響 → 減為 22 響 → 2000 年改電子敲鐘、定為 21 響",
+          "碑文『一天只有21小時，剩下3小時是用來思考的』之出處，臺大官方稱『尚待查找』"
+        ],
+        "era_constraint": "1960–70s 人設從未經歷 21 響（2000 年才定），且官方未載明 55→22 響的改動年份，故不得報自己那年的具體響數。",
         "todo": [
-          "傅鐘設立年份與緣由",
-          "『21 響』典故的正確說法與可靠出處（最高頻問題，必須查到出處）"
+          "1960–70 年代校園配置與現況差異",
+          "該年代可用的 Tier 0 公版照片（距今未達 50 年保護期可能性高，授權須特別謹慎）"
         ]
       }
     },
     {
       "id": "zongtu",
       "name": "舊總圖（今校史館）",
-      "qr_tokens": ["zongtu", "t1928-zt"],
+      "qr_tokens": [
+        "zongtu",
+        "t1928-zt"
+      ],
       "era_label": "1950 年代",
       "persona_file": "persona_1950s_literature_student.md",
-      "corpus_tags": ["zongtu", "1950s", "library"],
+      "corpus_tags": [
+        "zongtu",
+        "1950s",
+        "library"
+      ],
       "is_default_entry": false,
       "entry_note": "路線中間站，需能雙向承接前後兩個年代。",
       "arrival_puzzle": {
         "enabled": false,
         "passcode": null,
         "hint": null,
-        "requires_knowledge_from": ["wenxueyuan"],
+        "requires_knowledge_from": [
+          "wenxueyuan"
+        ],
         "verified": false,
         "todo": "待實地勘查後設計。"
       },
@@ -55,10 +80,17 @@
     {
       "id": "wenxueyuan",
       "name": "舊文學院",
-      "qr_tokens": ["wenxueyuan", "t1928-wx"],
+      "qr_tokens": [
+        "wenxueyuan",
+        "t1928-wx"
+      ],
       "era_label": "臺北帝大時期（1930 年代）",
       "persona_file": "persona_1930s_taihoku_student.md",
-      "corpus_tags": ["wenxueyuan", "1930s", "taihoku"],
+      "corpus_tags": [
+        "wenxueyuan",
+        "1930s",
+        "taihoku"
+      ],
       "is_default_entry": false,
       "entry_note": "尋跡的終點，也是時間上的起點；開場應有分量感。",
       "language_disclosure": "為便於對話，本角色以中文呈現；帝大時期校園語言以日語為主。",
@@ -66,7 +98,9 @@
         "enabled": false,
         "passcode": null,
         "hint": null,
-        "requires_knowledge_from": ["zongtu"],
+        "requires_knowledge_from": [
+          "zongtu"
+        ],
         "verified": false,
         "todo": "待實地勘查後設計。"
       },

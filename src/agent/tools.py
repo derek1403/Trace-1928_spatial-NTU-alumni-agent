@@ -131,15 +131,52 @@ _YEAR = re.compile(r"(?:19|20)\d{2}|\d{1,4}\s*(?:年|響|號|樓|元|角|分)")
 _CJK_RUN = re.compile(r"[一-鿿]{2,}")
 
 
+def _squash(text: str) -> str:
+    """移除空白後再比對。
+
+    語料的數字與單位之間常有空格（「21 響」），斷言則不一定有。
+    不正規化會讓字面比對漏掉本來該命中的內容。
+    """
+    return re.sub(r"\s+", "", text)
+
+
+_WINDOW = 4
+_STEP = 2
+
+#: 中文數字。數量詞是史料幻覺的高風險區，而「五個學部」「兩百人」「三公尺」
+#: 這類中文數字完全繞過 ASCII 數字檢查 —— 對一個專門防編造的系統是難看的漏洞。
+_CJK_DIGITS = set("〇零一二三四五六七八九十百千萬億兩半")
+
+
+def _is_quantity(atom: str) -> bool:
+    """這個原子是否含有數量資訊（阿拉伯或中文數字）。"""
+    return any(ch.isdigit() or ch in _CJK_DIGITS for ch in atom)
+
+
 def _claim_atoms(claim: str) -> list[str]:
     """從斷言反推可查證的原子。
 
     這是 verify_claim 與 retrieve_archive 的關鍵差異：檢索是從**問題**正推
     關鍵詞，驗證是從**斷言本身**反推。若兩者共用同一套查詢構造，
     二次驗證就只是把第一次的結果再拿一次，形同橡皮圖章。
+
+    **為什麼不用整串連續中文當原子**：原本的作法取「最長連續中文串」，
+    結果長句抽出的原子動輒十幾字，而語料原文中間往往有標點
+    （斷言「年傅斯年校長過世後軍方鑄鐘贈予臺大」vs 語料「…過世後，軍方鑄鐘…」），
+    整串永遠不可能是子字串 —— 於是有出處的真陳述會被誤判為證據不足，
+    Agent 反而對自己查得到的事情支支吾吾。
+
+    改為：短串整個取，長串切成重疊的四字窗。四字足以保留專有名詞的
+    鑑別力，又短到不會被一個逗號打斷。
     """
     atoms = _YEAR.findall(claim)
-    atoms.extend(run for run in _CJK_RUN.findall(claim) if len(run) >= 2)
+    for run in _CJK_RUN.findall(claim):
+        if len(run) <= 6:
+            atoms.append(run)
+            continue
+        atoms.extend(
+            run[i : i + _WINDOW] for i in range(0, len(run) - _WINDOW + 1, _STEP)
+        )
     # 長字串優先：專有名詞比通用詞更有鑑別力
     return sorted(set(atoms), key=len, reverse=True)[:8]
 
@@ -157,15 +194,17 @@ def verify_claim(state: VisitorState, *, claim: str) -> str:
     supported_atoms: list[str] = []
     evidence: list[Any] = []
     for atom in atoms:
+        needle = _squash(atom)
         hits = retriever.search(atom, top_k=2, landmark=state.current_landmark)
         for hit in hits:
-            if atom in hit.chunk.text:
+            if needle in _squash(hit.chunk.text):
                 supported_atoms.append(atom)
                 evidence.append(hit)
                 break
 
     coverage = len(supported_atoms) / len(atoms)
-    numeric = [a for a in atoms if any(ch.isdigit() for ch in a)]
+    # 數量詞另外從嚴：只要有一個數字沒有語料支撐，就不許說出口。
+    numeric = [a for a in atoms if _is_quantity(a)]
     numeric_ok = all(a in supported_atoms for a in numeric)
 
     if coverage >= 0.6 and numeric_ok:
