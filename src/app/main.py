@@ -17,6 +17,9 @@ from ..agent.visitor_state import TOPIC_LABELS
 from ..config import SETTINGS
 from ..rag import get_retriever
 from ..spatial.landmarks import load_graph
+from .cards import EMPTY as NO_CITATIONS
+from .cards import format_citations
+from .disclosure import CLEARED_NOTICE, DISCLOSURE
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
@@ -31,6 +34,14 @@ footer { display: none !important; }
 
 def _landmark_choices() -> list[tuple[str, str]]:
     return [(f"{lm.name}｜{lm.era_label}", lm.id) for lm in load_graph().all()]
+
+
+def _landmark_note(landmark_id: str | None) -> str:
+    """地標的語言設定揭露。tools.py 會告訴模型「介面已顯示」，所以這裡必須真的顯示。"""
+    landmark = load_graph().get(landmark_id) if landmark_id else None
+    if landmark and landmark.language_disclosure:
+        return f"ℹ️ {landmark.language_disclosure}"
+    return ""
 
 
 def _format_trace(state: VisitorState, limit: int = 12) -> str:
@@ -94,13 +105,19 @@ def build_ui() -> gr.Blocks:
         session = gr.State()
         history = gr.State([])
 
-        with gr.Row():
+        # 告知畫面：按下「了解並開始」才顯示對話區。
+        with gr.Column(visible=True) as consent_panel:
+            gr.Markdown(DISCLOSURE)
+            agree = gr.Button("了解並開始", variant="primary")
+
+        with gr.Row(visible=False) as main_panel:
             with gr.Column(scale=3):
                 landmark = gr.Radio(
                     choices=_landmark_choices(),
                     value=load_graph().default_entry().id,
                     label="你現在站在哪裡（模擬 QR Code 掃描）",
                 )
+                landmark_note = gr.Markdown(_landmark_note(load_graph().default_entry().id))
                 chat = gr.Chatbot(height=440, type="messages", label="對話")
                 with gr.Row():
                     box = gr.Textbox(
@@ -113,6 +130,12 @@ def build_ui() -> gr.Blocks:
                 media = gr.Video(label="動起來的老照片", visible=False, autoplay=True, loop=True)
 
             with gr.Column(scale=2):
+                gr.Markdown("### 史料卡")
+                gr.Markdown(
+                    "_他只講他那個年代的事。後來發生的、或今天的官方說法，"
+                    "看這裡的原文與出處。_"
+                )
+                citations = gr.Markdown(NO_CITATIONS)
                 gr.Markdown("### Agent 做了什麼")
                 gr.Markdown(
                     "_下面每一列都是 Agent **自己決定**要呼叫的工具，"
@@ -122,6 +145,8 @@ def build_ui() -> gr.Blocks:
                 gr.Markdown("### 即時指標")
                 metrics = gr.Markdown("_尚未開始。_")
                 reset = gr.Button("重新開始一段導覽")
+                clear = gr.Button("清除我的資料", variant="stop")
+                privacy_note = gr.Markdown("")
 
         # ---------------- 事件 ---------------- #
 
@@ -129,11 +154,11 @@ def build_ui() -> gr.Blocks:
             """切換地標＝走到新地點掃碼。刻意保留 state，交接記憶才會生效。"""
             if state is None:
                 state = agent.new_session(landmark_id)
-            return state, [], []
+            return state, [], [], _landmark_note(landmark_id)
 
         def respond(user_text, state, hist, landmark_id):
             if not (user_text or "").strip():
-                return state, hist, gr.update(), gr.update(), gr.update(), ""
+                return state, hist, gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
 
             if state is None:
                 state = agent.new_session(landmark_id)
@@ -165,16 +190,47 @@ def build_ui() -> gr.Blocks:
                 _format_trace(state),
                 _format_metrics(state),
                 video_update,
+                format_citations(turn.citations if turn else []),
             )
 
         def do_reset():
-            return None, [], [], "_尚未有工具呼叫。_", "_尚未開始。_", gr.update(visible=False)
+            return (
+                None,
+                [],
+                [],
+                "_尚未有工具呼叫。_",
+                "_尚未開始。_",
+                gr.update(visible=False),
+                NO_CITATIONS,
+            )
 
-        landmark.change(
-            on_landmark_change, [landmark, session], [session, history, chat]
+        def do_clear(state):
+            """刪除這位訪客的資料。換一份全新的 history 而非改寫舊的 ——
+            歷史只能追加，清除＝開新對話。"""
+            if state is not None:
+                state.clear()
+            return (
+                state,
+                [],
+                [],
+                "_尚未有工具呼叫。_",
+                "_尚未開始。_",
+                gr.update(visible=False),
+                NO_CITATIONS,
+                CLEARED_NOTICE,
+            )
+
+        agree.click(
+            lambda: (gr.update(visible=False), gr.update(visible=True)),
+            None,
+            [consent_panel, main_panel],
         )
 
-        outputs = [session, history, chat, trace, metrics, media]
+        landmark.change(
+            on_landmark_change, [landmark, session], [session, history, chat, landmark_note]
+        )
+
+        outputs = [session, history, chat, trace, metrics, media, citations]
         send.click(respond, [box, session, history, landmark], outputs).then(
             lambda: "", None, box
         )
@@ -182,6 +238,7 @@ def build_ui() -> gr.Blocks:
             lambda: "", None, box
         )
         reset.click(do_reset, None, outputs)
+        clear.click(do_clear, [session], [*outputs, privacy_note])
 
     return demo
 

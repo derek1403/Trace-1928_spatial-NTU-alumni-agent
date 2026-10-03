@@ -103,7 +103,7 @@
       ],
       "is_default_entry": false,
       "entry_note": "尋跡的終點，也是時間上的起點；開場應有分量感。",
-      "language_disclosure": "為便於對話，本角色以中文呈現；帝大時期校園語言以日語為主。",
+      "language_disclosure": "為便於對話，本角色以中文呈現。",
       "arrival_puzzle": {
         "enabled": false,
         "passcode": null,
@@ -119,7 +119,8 @@
         "todo": [
           "舊文學院落成年份、建築樣式與原始用途",
           "文政學部科系結構",
-          "台籍學生在帝大／文政學部的比例"
+          "台籍學生在帝大／文政學部的比例",
+          "帝大時期校園語言與台籍學生比例（原 language_disclosure 後半句未查證，已於 2026-10-03 移除；查到出處後補回）"
         ]
       }
     }

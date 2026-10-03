@@ -1,7 +1,12 @@
 """訪客模型與跨地標交接狀態。
 
-這是空間主動性的資料基礎：Agent 靜默累積興趣權重，據此決定要把
+這是空間主動性的資料基礎：Agent 累積興趣權重，據此決定要把
 使用者導向哪一個地標，並在對方抵達時交接前一段的敘事脈絡。
+
+隱私原則（回應審查意見，詳見 docs/PRIVACY.md）：
+- 使用者在開始對話前已被告知記錄了什麼、為什麼、保存多久。
+- 對話中 Agent 不主動提起，但被問到時必須如實回答。
+- 使用者隨時可以清除自己的資料（`clear()`）；session 結束即刪。
 """
 
 from __future__ import annotations
@@ -70,6 +75,31 @@ class VisitorState:
     suggestions: list[dict[str, Any]] = field(default_factory=list)
     #: 本輪產生、待前端顯示的媒體檔路徑；由 loop 取走後清空。
     pending_media: list[str] = field(default_factory=list)
+    #: 本輪檢索到、待前端以「史料卡」顯示的語料。由 loop 取走後清空。
+    #: 人設只講他那個年代的事；年代之後的事實（如 2000 年改電子鐘、臺大今天的
+    #: 官方說法）由史料卡呈現原文與出處，而不是從人設嘴裡說出來。
+    pending_citations: list[dict[str, Any]] = field(default_factory=list)
+
+    def add_citation(self, chunk: Any) -> None:
+        """登錄一張史料卡。同一段語料在同一輪只出現一次。"""
+        if any(c["id"] == chunk.id for c in self.pending_citations):
+            return
+        self.pending_citations.append(
+            {
+                "id": chunk.id,
+                "source": chunk.source,
+                "source_date": chunk.source_date,
+                "text": chunk.text,
+                "verified": chunk.verified,
+                # 原樣顯示核對者，不要把「已對照官方網頁」說成「館員校對」。
+                "verified_by": chunk.verified_by,
+            }
+        )
+
+    def take_citations(self) -> list[dict[str, Any]]:
+        out = list(self.pending_citations)
+        self.pending_citations.clear()
+        return out
 
     # ------------------------------------------------------------------ #
 
@@ -111,6 +141,35 @@ class VisitorState:
     def record_suggestion(self, to_landmark: str, reason: str) -> None:
         self.suggestions.append(
             {"from": self.current_landmark, "to": to_landmark, "reason": reason, "followed": False}
+        )
+
+    def clear(self) -> None:
+        """清除這位訪客的所有個人資料：興趣、軌跡、交接摘要、推薦紀錄。
+
+        保留 session_id 與目前所在地標，使用者可以接著聊，只是從零開始。
+        對應介面上的「清除我的資料」按鈕。
+        """
+        self.interests = {t: 0.0 for t in TOPICS}
+        self.turns_at_landmark = (
+            {self.current_landmark: 0} if self.current_landmark else {}
+        )
+        self.visited = [self.current_landmark] if self.current_landmark else []
+        self.handoff_notes.clear()
+        self.unlocked.clear()
+        self.trace.clear()
+        self.suggestions.clear()
+        self.pending_media.clear()
+        self.pending_citations.clear()
+        self.started_at = time.time()
+
+    def disclosure_summary(self) -> str:
+        """被問到「你記錄了我什麼」時，可以如實交代的內容。"""
+        top = self.top_interests()
+        labels = "、".join(TOPIC_LABELS[t] for t in top) if top else "還沒有明顯的偏好"
+        return (
+            f"目前記下的興趣類別：{labels}。"
+            f"用途是推薦你下一個值得去的地點。"
+            f"只存在這次對話中，結束就刪除，你也可以隨時按「清除我的資料」。"
         )
 
     # ------------------------------------------------------------------ #

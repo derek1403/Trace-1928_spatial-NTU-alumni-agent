@@ -1,7 +1,11 @@
 """Anthropic Claude provider。
 
 實作重點：
-- 使用 Claude Opus 5 與 adaptive thinking（Opus 5 預設即為 adaptive）。
+- 使用 Claude Opus 5.5。thinking 一律開啟且不可關閉（送 disabled 會 400），
+  不送 thinking 參數即為 adaptive；深度只由 output_config.effort 控制。
+- 不使用強制 tool_choice（any / tool 在 Opus 5.5 會 400），一律 auto。
+- 歷史只能追加、不可改寫：assistant 回應原封不動放回 history，
+  否則新帳號會因 preserved thinking 的歷史竄改檢查而 400。
 - 開啟伺服器端 refusal fallback：安全分類器拒答時自動轉給備援模型，
   避免導覽對話在敏感年代話題上整段中斷。
 - 平行工具呼叫的結果一律包在同一則 user 訊息裡回送。

@@ -33,6 +33,8 @@ class Turn:
     text: str
     trace: list[ToolInvocation] = field(default_factory=list)
     media: list[str] = field(default_factory=list)
+    #: 本輪的史料卡（檢索到的語料原文與出處），由介面顯示在對話旁。
+    citations: list[dict[str, Any]] = field(default_factory=list)
     rounds: int = 0
     usage: dict[str, int] = field(default_factory=dict)
     refused: bool = False
@@ -114,6 +116,7 @@ class Agent:
                     "你剛剛問到的那件事，我倒是記得比較清楚。）"
                 )
                 log.warning("模型拒答：%s", response.refusal)
+                state.take_citations()  # 丟棄，免得漏到下一輪
                 return turn
 
             history.append({"role": "assistant", "content": response.raw_content})
@@ -137,6 +140,7 @@ class Agent:
         # 若模型在最後一輪只呼叫工具沒說話，補一句避免空白泡泡。
         if not turn.text.strip():
             turn.text = "（沉默了一下）你剛才問的，讓我想起一些事。"
+        turn.citations = state.take_citations()
         return turn
 
     # ------------------------------------------------------------------ #

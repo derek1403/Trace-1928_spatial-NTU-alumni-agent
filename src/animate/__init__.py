@@ -5,6 +5,11 @@
 
 最後一級是純 CPU 的平面 Ken Burns，只需 Pillow + numpy。有它在，
 「老照片動起來」這項成果就不依賴任何外部服務或 GPU。
+
+兩道閘門（依序）：
+1. 授權閘門 —— 未登錄或缺授權依據的照片一律拒絕（`Photo.reject_reason`）。
+2. 人臉閘門 —— 有可辨識個人且未取得有依據的同意時，跳過會改變臉部的後端
+   （商用 API、LivePortrait），只做運鏡。回應審查意見二。
 """
 
 from __future__ import annotations
@@ -20,6 +25,11 @@ log = logging.getLogger(__name__)
 
 #: 由高品質到保底的嘗試順序。
 CHAIN = ["commercial_api", "liveportrait", "kenburns_2_5d", "kenburns"]
+
+#: 會改變畫面中人物表情或五官的後端。Ken Burns（含 2.5D 視差）只動鏡頭，不在此列。
+FACE_DEFORMING = {"commercial_api", "liveportrait"}
+
+FACE_GATE_REASON = "人臉閘門：畫面有可辨識的人物且未取得有依據的同意，只允許運鏡"
 
 
 @dataclass
@@ -95,6 +105,9 @@ def animate(
         if fn is None:
             attempts.append((name, "未知的後端名稱"))
             continue
+        if name in FACE_DEFORMING and not photo.allows_face_animation:
+            attempts.append((name, FACE_GATE_REASON))
+            continue
         try:
             path = fn(photo, out, duration)
             return AnimationResult(path=path, backend=name, attempts=attempts)
@@ -108,4 +121,11 @@ def animate(
     raise RuntimeError(f"所有後端皆失敗：{attempts}")
 
 
-__all__ = ["animate", "AnimationResult", "BackendUnavailable", "CHAIN"]
+__all__ = [
+    "animate",
+    "AnimationResult",
+    "BackendUnavailable",
+    "CHAIN",
+    "FACE_DEFORMING",
+    "FACE_GATE_REASON",
+]

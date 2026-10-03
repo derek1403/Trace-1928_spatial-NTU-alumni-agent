@@ -7,19 +7,66 @@
 - `kenburns`      平面平移縮放。只需 Pillow + numpy，必然可用。
 - `kenburns_2_5d` 加上單目深度估計做視差位移，前景與背景以不同速度移動，
                   產生立體感。需要 torch；不可用時自動退回平面模式。
+
+兩種模式都**只移動鏡頭，不改變畫面中人物的表情或五官**，所以可以用在
+有可辨識人物的照片上（人臉閘門見 `animate/__init__.py`）。
+所有輸出影格一律燒入「AI 生成動態影像」標示（回應審查意見二）。
 """
 
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 log = logging.getLogger(__name__)
 
 _FPS = 24
+
+AI_LABEL = "AI 生成動態影像"
+#: 找不到中文字型時的退路。寧可標示是英文，也不能沒有標示。
+AI_LABEL_ASCII = "AI-generated motion"
+
+_CJK_FONT_CANDIDATES = (
+    "C:/Windows/Fonts/msjh.ttc",  # 微軟正黑體
+    "C:/Windows/Fonts/msjhbd.ttc",
+    "C:/Windows/Fonts/mingliu.ttc",
+    "/System/Library/Fonts/PingFang.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+)
+
+
+@lru_cache(maxsize=8)
+def _label_font(size: int) -> tuple[ImageFont.ImageFont, bool]:
+    """回傳 (字型, 是否支援中文)。"""
+    for path in _CJK_FONT_CANDIDATES:
+        try:
+            return ImageFont.truetype(path, size), True
+        except OSError:
+            continue
+    log.warning("找不到中文字型，AI 標示改用英文")
+    return ImageFont.load_default(), False
+
+
+def add_ai_label(frame: Image.Image) -> Image.Image:
+    """在右下角燒入半透明底的 AI 生成標示。所有動態影像後端都應呼叫這個函式。"""
+    img = frame.convert("RGB").copy()
+    draw = ImageDraw.Draw(img, "RGBA")
+    size = max(14, img.height // 24)
+    font, cjk = _label_font(size)
+    text = AI_LABEL if cjk else AI_LABEL_ASCII
+    left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
+    tw, th = right - left, bottom - top
+    pad = max(4, size // 3)
+    x = img.width - tw - pad * 3
+    y = img.height - th - pad * 3
+    draw.rectangle((x - pad, y - pad, x + tw + pad, y + th + pad), fill=(0, 0, 0, 150))
+    draw.text((x - left, y - top), text, font=font, fill=(255, 255, 255, 235))
+    return img
 
 
 def _ease(t: float) -> float:
@@ -110,7 +157,7 @@ def render(
         )
         left = int(t * max_shift_x)
         top = int(t * max_shift_y * 0.5)
-        frames.append(canvas.crop((left, top, left + size[0], top + size[1])))
+        frames.append(add_ai_label(canvas.crop((left, top, left + size[0], top + size[1]))))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     try:

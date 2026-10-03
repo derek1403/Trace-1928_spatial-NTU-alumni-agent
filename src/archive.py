@@ -21,6 +21,22 @@ log = logging.getLogger(__name__)
 #: 可直接使用的授權狀態。其餘（授權中、不可用、未登錄）一律拒絕。
 USABLE_LICENCES = {"PD", "CC-BY", "CC-BY-SA", "CC0", "UGC"}
 
+#: 人臉動態化的兩種狀態。未填或填錯一律視為 forbidden。
+FACE_FORBIDDEN = "forbidden"
+FACE_ALLOWED_WITH_CONSENT = "allowed_with_consent"
+
+
+def _as_bool(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in ("true", "1", "yes", "是"):
+            return True
+        if lowered in ("false", "0", "no", "否"):
+            return False
+    return default
+
 
 @dataclass(frozen=True)
 class Photo:
@@ -33,11 +49,30 @@ class Photo:
     licence_basis: str
     acquired: str
     caption: str = ""
+    #: 畫面中是否有可辨識的個人。未填時預設 True —— 寧可把一張建築照
+    #: 誤判成只能運鏡（沒有損失），也不要誤把真人的臉做成動態。
+    identifiable_person: bool = True
+    face_animation: str = FACE_FORBIDDEN
+    #: 允許臉部動態化時的依據（誰同意、何時、如何取得）。比照 licence_basis：
+    #: 沒寫依據就不算數。
+    face_animation_basis: str = ""
     meta: dict[str, Any] | None = None
 
     @property
     def path(self) -> Path:
         return ARCHIVE_DIR / self.filename
+
+    @property
+    def allows_face_animation(self) -> bool:
+        """能否使用會改變臉部的後端（LivePortrait、商用影像 API）。
+
+        回應審查意見二：可辨識的真人，除非有書面依據的同意，否則只做運鏡。
+        """
+        if not self.identifiable_person:
+            return True
+        return self.face_animation == FACE_ALLOWED_WITH_CONSENT and bool(
+            self.face_animation_basis.strip()
+        )
 
     @property
     def usable(self) -> bool:
@@ -67,6 +102,9 @@ class PhotoRegistry:
                 licence_basis=raw.get("licence_basis", ""),
                 acquired=raw.get("acquired", ""),
                 caption=raw.get("caption", ""),
+                identifiable_person=_as_bool(raw.get("identifiable_person"), True),
+                face_animation=raw.get("face_animation") or FACE_FORBIDDEN,
+                face_animation_basis=raw.get("face_animation_basis", ""),
                 meta=raw,
             )
             self._photos[photo.id] = photo

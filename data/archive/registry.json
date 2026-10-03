@@ -9,7 +9,10 @@
     "licence": "PD | CC0 | CC-BY | CC-BY-SA | UGC | 授權中 | 不可用",
     "licence_basis": "**必填**。具體寫明判定依據，例如『法人著作，1935 年發表，逾 50 年保護期』或『來源頁面標示 CC BY 4.0，擷取自 <URL>』。不接受『應該是公版』這類概括推定 —— 缺此欄位者視為不可用。",
     "acquired": "取得日期 YYYY-MM-DD",
-    "caption": "畫面說明，會提供給 Agent 作為敘事素材"
+    "caption": "畫面說明，會提供給 Agent 作為敘事素材",
+    "identifiable_person": "畫面中是否有可辨識的個人（true/false）。**未填視為 true** —— 建築照被誤判只會限制為運鏡，沒有損失；反過來則會把真人的臉做成動態。",
+    "face_animation": "forbidden | allowed_with_consent。未填視為 forbidden。有可辨識個人時，除非取得同意，一律 forbidden（審查意見二）",
+    "face_animation_basis": "face_animation 為 allowed_with_consent 時**必填**：誰同意（當事人或家屬）、何時、以何種形式。比照 licence_basis，沒寫依據就不算數。"
   },
   "photos": []
 }

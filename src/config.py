@@ -26,12 +26,13 @@ class Settings:
     """執行期設定。以環境變數 TRACE1928_* 覆寫。"""
 
     # --- LLM ---
-    model: str = field(default_factory=lambda: _env("MODEL", "claude-opus-5"))
+    model: str = field(default_factory=lambda: _env("MODEL", "claude-opus-5-5"))
     max_tokens: int = field(default_factory=lambda: int(_env("MAX_TOKENS", "8000")))
     # low | medium | high | xhigh | max
     # 對話式導覽以延遲為重，預設 medium；做 golden QA 評測時可調高。
+    # Opus 5.5 的 thinking 無法關閉（送 disabled 會 400），effort 是唯一的深度控制。
     effort: str = field(default_factory=lambda: _env("EFFORT", "medium"))
-    # Claude Opus 5 的伺服器端 refusal fallback，避免安全分類器拒答時整段對話中斷。
+    # 伺服器端 refusal fallback，避免安全分類器拒答時整段對話中斷。
     enable_refusal_fallback: bool = field(
         default_factory=lambda: _env("REFUSAL_FALLBACK", "1") == "1"
     )
