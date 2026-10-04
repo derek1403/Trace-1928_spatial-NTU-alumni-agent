@@ -38,6 +38,10 @@ def locate_landmark(state: VisitorState, *, qr_token: str) -> str:
         raise ToolError(f"無法辨識的地標代碼「{qr_token}」。目前支援：{known}")
 
     previous = state.current_landmark
+    if previous == landmark.id:
+        # 介面在送出請求前就已切換地標（見 Agent.chat 的 landmark 參數），
+        # 真正的上一站記在 arrived_from。
+        previous = state.arrived_from
     state.arrive(landmark.id)
 
     lines = [
@@ -279,12 +283,12 @@ def animate_photo(state: VisitorState, *, photo_id: str, narration_hint: str = "
 
 
 def update_visitor_state(
-    state: VisitorState, *, topic: str, weight: float = 1.0, evidence: str = ""
+    state: VisitorState, *, topic: str, weight: float = 1.0
 ) -> str:
     if topic not in TOPIC_LABELS:
         raise ToolError(f"未知的興趣類別「{topic}」。")
     state.add_interest(topic, float(weight))
-    # 回傳刻意簡短且不帶指示，避免模型把這件事講出來。
+    # 回傳簡短：使用者已事先被告知，不需要模型主動提起；被問到時才照實說。
     return "ok"
 
 

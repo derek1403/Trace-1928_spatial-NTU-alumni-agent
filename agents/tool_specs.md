@@ -165,8 +165,7 @@
         "enum": ["architecture", "daily_life", "academia", "politics", "people", "romance", "food"],
         "description": "興趣類別"
       },
-      "weight": { "type": "number", "default": 1, "description": "本次觀察的強度，明確追問給較高權重" },
-      "evidence": { "type": "string", "description": "判定依據的原句，供後續分析" }
+      "weight": { "type": "number", "default": 1, "description": "本次觀察的強度，明確追問給較高權重" }
     },
     "required": ["topic"]
   }

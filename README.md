@@ -114,7 +114,8 @@ py -m pip install -r requirements.txt
 # 煙霧測試：不需要 API 金鑰，驗證除了 LLM 呼叫以外的每一個環節
 py eval\test_smoke.py
 
-# 啟動介面（需要 ANTHROPIC_API_KEY，或先跑過 `ant auth login`）
+# 啟動介面（需要金鑰：複製 .env.example 為 .env 填 TRACE1928_ANTHROPIC_API_KEY；
+# 或設 ANTHROPIC_API_KEY、或先跑過 `ant auth login`）
 py -m src.app
 ```
 

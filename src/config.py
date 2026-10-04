@@ -17,6 +17,24 @@ OUTPUT_DIR = ROOT / "outputs"
 SESSION_DIR = ROOT / "sessions"
 
 
+def _load_dotenv(path: Path = ROOT / ".env") -> None:
+    """讀取專案根目錄的 .env（零相依）。已存在的環境變數優先，不會被覆寫。
+
+    .env 已列入 .gitignore；金鑰只放這裡或系統環境變數，不進程式碼。
+    """
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+_load_dotenv()
+
+
 def _env(name: str, default: str) -> str:
     return os.environ.get(f"TRACE1928_{name}", default)
 

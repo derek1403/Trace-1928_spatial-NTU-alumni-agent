@@ -170,7 +170,7 @@ def build_ui() -> gr.Blocks:
                 prompt = f"[系統：使用者剛掃描了 {landmark_id} 的 QR Code]\n{user_text}"
 
             try:
-                turn = agent.chat(state, prompt, hist)
+                turn = agent.chat(state, prompt, hist, landmark=landmark_id)
                 reply = turn.text
             except Exception as exc:  # pragma: no cover - 前端不該因後端例外而白畫面
                 log.exception("對話失敗")

@@ -93,8 +93,31 @@ class Agent:
 
     # ------------------------------------------------------------------ #
 
-    def chat(self, state: VisitorState, user_text: str, history: list[dict[str, Any]]) -> Turn:
-        """處理一次使用者輸入。`history` 會被就地更新。"""
+    def chat(
+        self,
+        state: VisitorState,
+        user_text: str,
+        history: list[dict[str, Any]],
+        landmark: str | None = None,
+    ) -> Turn:
+        """處理一次使用者輸入。`history` 會被就地更新。
+
+        `landmark`：使用者剛掃描的地標。與目前地標不同時，**在送出請求之前**
+        就換人設，讓這一輪從第一個請求起就用新地標的 system prompt。
+        若等模型呼叫 locate_landmark 才換，這一輪會用舊人設回答新地標
+        （實測：角色錯亂、跳出角色解釋），下一輪還會因 system prompt 改變而 400。
+        """
+        if landmark and landmark != state.current_landmark:
+            state.arrived_from = state.current_landmark
+            state.arrive(landmark)
+
+        # 人設換了 → 舊 history 的 thinking 區塊綁定的是舊 system prompt，
+        # 沿用會被 API 以 400 拒絕。開新 history；跨站記憶靠 handoff_notes 傳遞。
+        if history and state.prompt_landmark not in (None, state.current_landmark):
+            log.info("人設已從 %s 換成 %s，開新 history", state.prompt_landmark, state.current_landmark)
+            history.clear()
+        state.prompt_landmark = state.current_landmark
+
         history.append({"role": "user", "content": user_text})
         state.bump_turn()
 

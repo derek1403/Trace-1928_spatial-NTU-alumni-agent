@@ -79,6 +79,11 @@ class VisitorState:
     #: 人設只講他那個年代的事；年代之後的事實（如 2000 年改電子鐘、臺大今天的
     #: 官方說法）由史料卡呈現原文與出處，而不是從人設嘴裡說出來。
     pending_citations: list[dict[str, Any]] = field(default_factory=list)
+    #: 由介面／腳本預先切換地標時，記住從哪裡來，locate_landmark 才接得上交接。
+    arrived_from: str | None = None
+    #: 目前這段 history 是用哪個地標的人設寫的。人設一換，舊 history 的
+    #: thinking 區塊就對不上新的 system prompt（API 400），必須開新 history。
+    prompt_landmark: str | None = None
 
     def add_citation(self, chunk: Any) -> None:
         """登錄一張史料卡。同一段語料在同一輪只出現一次。"""
@@ -160,6 +165,7 @@ class VisitorState:
         self.suggestions.clear()
         self.pending_media.clear()
         self.pending_citations.clear()
+        self.arrived_from = None
         self.started_at = time.time()
 
     def disclosure_summary(self) -> str:

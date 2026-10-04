@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import Any
 
 import anthropic
@@ -26,14 +27,21 @@ log = logging.getLogger(__name__)
 _FALLBACK_BETA = "server-side-fallback-2026-07-01"
 
 
+def _is_fallback_error(exc: anthropic.BadRequestError) -> bool:
+    msg = str(getattr(exc, "message", exc)).lower()
+    return "fallback" in msg or _FALLBACK_BETA in msg
+
+
 class AnthropicClient:
     """LLMClient 的 Anthropic 實作。"""
 
     def __init__(self, settings: Settings | None = None) -> None:
         self.settings = settings or SETTINGS
-        # 零參數建構：SDK 會依序解析 ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN /
-        # `ant auth login` 建立的 profile，不要在程式碼裡寫死金鑰。
-        self.client = anthropic.Anthropic()
+        # 優先用專案專屬的 TRACE1928_ANTHROPIC_API_KEY（.env），避免與其他專案共用金鑰；
+        # 沒設時零參數建構，SDK 會依序解析 ANTHROPIC_API_KEY / ANTHROPIC_AUTH_TOKEN /
+        # `ant auth login` 建立的 profile。不要在程式碼裡寫死金鑰。
+        key = os.environ.get("TRACE1928_ANTHROPIC_API_KEY")
+        self.client = anthropic.Anthropic(api_key=key) if key else anthropic.Anthropic()
 
     # ------------------------------------------------------------------ #
 
@@ -71,7 +79,9 @@ class AnthropicClient:
                 resp = self.client.messages.create(**kwargs)
         except anthropic.BadRequestError as exc:
             # fallback beta 未開通時退回一般呼叫，不要讓 demo 整個掛掉。
-            if s.enable_refusal_fallback:
+            # 只認與 fallback 有關的 400；其他 400（如 thinking 簽章不符）照常拋出，
+            # 否則會誤關 fallback、還把真正的錯誤藏起來（2026-10-04 實測踩到）。
+            if s.enable_refusal_fallback and _is_fallback_error(exc):
                 log.warning("refusal fallback 不可用，退回一般呼叫：%s", exc.message)
                 s.enable_refusal_fallback = False
                 resp = self.client.messages.create(**kwargs)

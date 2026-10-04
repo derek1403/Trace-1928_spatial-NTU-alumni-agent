@@ -331,6 +331,69 @@ main_src = (ROOT / "src" / "app" / "main.py").read_text(encoding="utf-8")
 check("介面真的顯示語言揭露（tools.py 告訴模型已顯示）", "language_disclosure" in main_src)
 
 # --------------------------------------------------------------------------- #
+print("\n[14] 切換地標：送出請求前就換人設（2026-10-04 真實 API 測試踩到的 400）")
+
+from types import SimpleNamespace  # noqa: E402
+
+from src.agent import Agent  # noqa: E402
+from src.llm.anthropic_client import _is_fallback_error  # noqa: E402
+from src.llm.base import LLMResponse  # noqa: E402
+
+
+class _RecordingClient:
+    """不打 API，只記下每次請求用的 system prompt。"""
+
+    def __init__(self) -> None:
+        self.systems: list[str] = []
+
+    def complete(self, *, system, messages, tools):
+        self.systems.append(system)
+        return LLMResponse(text="嗯。", raw_content=[{"type": "text", "text": "嗯。"}])
+
+    def format_tool_results(self, results):  # pragma: no cover - 本測試不呼叫工具
+        return {"role": "user", "content": []}
+
+
+fake = _RecordingClient()
+agent = Agent(client=fake)
+st = agent.new_session("fuzhong")
+hist: list = []
+agent.chat(st, "你好", hist)
+st.handoff_notes["fuzhong"] = "聊了碑文出處"
+agent.chat(st, "[系統：使用者剛掃描了 zongtu 的 QR Code]\n我到了", hist, landmark="zongtu")
+
+check("換站那一輪的第一個請求就用新人設", agent._persona("zongtu") in fake.systems[-1])
+check("換站那一輪不再帶舊人設", agent._persona("fuzhong") not in fake.systems[-1])
+check("換人設時開新 history（舊 thinking 綁舊 system，沿用會 400）", len(hist) == 2, f"len={len(hist)}")
+out = tool_impl.execute(st, "locate_landmark", {"qr_token": "zongtu"})
+check("預先換站後，locate_landmark 仍接得上前一站的交接", "聊了碑文出處" in out, out[-120:])
+
+first = agent.new_session("fuzhong")
+try:
+    out = tool_impl.execute(first, "locate_landmark", {"qr_token": "fuzhong"})
+    check("第一站（未預先換站）呼叫 locate_landmark 不會出錯", "無前段記憶" in out)
+except AttributeError as exc:
+    check("第一站（未預先換站）呼叫 locate_landmark 不會出錯", False, str(exc))
+
+st2 = agent.new_session("fuzhong")
+hist2: list = []
+agent.chat(st2, "a", hist2)
+st2.current_landmark = "zongtu"  # 模擬模型自行呼叫 locate_landmark 換站
+agent.chat(st2, "b", hist2)
+check("模型自行換站後，下一輪也會開新 history", len(hist2) == 2, f"len={len(hist2)}")
+
+uvs = next(t for t in TOOLS if t["name"] == "update_visitor_state")
+check("興趣追蹤不收使用者原話（超出告知範圍）", set(uvs["input_schema"]["properties"]) == {"topic", "weight"})
+from src.app.disclosure import DISCLOSURE  # noqa: E402
+check("告知畫面有說對話內容會暫存並送到 AI 服務", "對話內容" in DISCLOSURE and "AI 服務" in DISCLOSURE)
+
+check(
+    "thinking 簽章不符的 400 不會被誤判為 fallback 不可用",
+    not _is_fallback_error(SimpleNamespace(message="messages.1.content.0: Invalid `signature` in `thinking` block.")),
+)
+check("真正的 fallback 錯誤仍會被辨識", _is_fallback_error(SimpleNamespace(message="Unknown parameter: fallbacks")))
+
+# --------------------------------------------------------------------------- #
 
 print("\n" + "=" * 56)
 if _failed:
